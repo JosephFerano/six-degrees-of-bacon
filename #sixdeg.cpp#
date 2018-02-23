@@ -59,6 +59,8 @@ pair< vector<string> , unordered_map<int, int> > loadDataFromFile(const string& 
     
     split(strLine.c_str(), ',', tokens); 
     int id = getId(tokens[0]);
+    cout << id << " " << i << endl;
+    
     map[id] = i;
     data.push_back(tokens[1]);
     i++;
@@ -137,19 +139,16 @@ int main() {
   elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   cout << "\nElapsed time to parse titles to actors: " << elapsed_secs << " seconds\n";
 
+
   for (auto t : titlesToIndex)
   {
     int titleIndex = t.second;
-    for (auto edges : parsedTitles[t.first])
-    {
-      cout << "Title Index: " << titleIndex << " " << endl;
-      cout << "Edge: " << edges << " " << endl;
-      cout << "titleToActors size: " << titleToActors.size() << " " << endl;
-      auto t2a = titleToActors[titleIndex];
-      cout << "Getting t2: " << endl;
-      cout << "Edge: " << t2a.size() << " " << endl;
-      t2a.push_back(actorsToIndex[edges]);
-    }
+    cout << "Title Index: " << titleIndex << " " << endl;
+    for (auto edge : parsedTitles[t.first])
+      {
+	cout << "Edge: " << edge << " " << endl;
+	titleToActors[titleIndex].push_back(actorsToIndex[edge]);
+      }
   }
 
   for (auto a : actorsToIndex)
