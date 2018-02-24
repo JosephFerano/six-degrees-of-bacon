@@ -13,26 +13,13 @@
 #include <unordered_set>
 using namespace std;
 
-void bfs(const Graph& graph, int actorIndex, int targetIndex);
-
 struct edge
 {
   int movieIndex;
   int toActorIndex;
 };
 
-typedef vector< vector<edge> > Graph;
-
-// funtion split:
-//   Given:
-//     - s, a c-style string
-//     - c, a separator character
-//     - res, a reference to a vector of strings
-//   Splits the string using the separator and returns the result
-//   in the res vector. 
-//   
-//   For example: Given s = "a man a horse", c = ' '
-//   Returns a vector with {"a", "man", "a", "horse"};
+typedef vector< vector<int> > Graph;
 
 void split(const char *s, char c , vector<string> &res) {
   res.resize(0);
@@ -47,6 +34,22 @@ int getId(const string& s)
 {
   string n = s;
   return stoi(n.erase(0, 2));
+}
+
+int findActorIndex(const vector<string>& actors, const string& actor)
+{
+  int a = -1;
+  for (int i = 0; i < actors.size(); i++)
+  {
+    if (actors[i] == actor)
+    {
+      a = i;
+      break;
+    }
+  }
+  if (a == -1)
+    cout << "Actor " << actor << " not found" << endl;
+  return a;
 }
 
 pair< vector<string> , unordered_map<int, int> > loadDataFromFile(const string& path)
@@ -80,6 +83,55 @@ void clock_it(const string& m, clock_t begin, clock_t end)
 {
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   cout << "\nElapsed time to " << m << " : " << elapsed_secs << " seconds\n";
+}
+
+int getDegreesOfSeparation(const Graph& actorGraph,
+			   const Graph& titleGraph,
+			   vector<edge>& visitedFrom,
+			   int fromActor,
+			   int toActor)
+{
+  vector<int> top;
+  vector<int> neighbors;
+  int depth = 0;
+  top.push_back(fromActor);
+  visitedFrom.resize(actorGraph.size());
+  for (auto &v : visitedFrom)
+    v.toActorIndex = -1;
+  visitedFrom[fromActor].toActorIndex = 0;
+  while (depth < 6)
+  {
+    for (auto actor : top)
+    {
+      for (auto t : actorGraph[actor])
+      {
+	for (auto costar : titleGraph[t])
+	{
+	  if (visitedFrom[costar].toActorIndex == -1)
+	  {
+	    visitedFrom[costar].toActorIndex = actor;
+	    visitedFrom[costar].movieIndex = t;
+	    if (costar == toActor)
+	      return depth; // Found actor!
+	    neighbors.push_back(costar);
+	  }
+	}
+      }
+    }
+    top.clear();
+    for (auto n : neighbors)
+      top.push_back(n);
+    depth++;
+  }
+  // COULD NOT FIND CONNECTION, YOU BROKE COMPUTER SCIENCE
+  return 0;
+}
+
+void getActorsWithDepth(const Graph& actorGraph,
+			const Graph& titleGraph,
+			vector<edge>& visitedFrom,
+			int fromActor)
+{
 }
 
 int main() {
@@ -142,51 +194,17 @@ int main() {
     }
   }
 
-  // for (auto pt : parsedTitles)
-  // {
-  //   cout << titles[titlesToIndex[pt.first]] << " \n";
-  //   for (auto a : pt.second)
-  //     cout << '\t' << actors[actorsToIndex[a]] << endl;
-  // }
-
-  // for (auto pa : parsedActors)
-  // {
-  //   cout << actors[actorsToIndex[pa.first]] << " \n";
-  //   for (auto t : pa.second)
-  //     cout << '\t' << titles[titlesToIndex[t]] << endl;
-  // }
-
   clock_it("Create maps", begin, clock());
-  Graph graph;
-  Graph movieGraph;
 
-  graph.resize(actorsToIndex.size());
-  movieGraph.resize(titlesToIndex.size());
+  Graph actorGraph;
+  Graph titleGraph;
+
+  actorGraph.resize(actorsToIndex.size());
+  titleGraph.resize(titlesToIndex.size());
   // cout << actorsToIndex.size() << endl;
 
   begin = clock();
 
-  for (auto pas : parsedActors)
-  {
-    int actorId = pas.first;
-    int actorIndex = actorsToIndex[actorId];
-    // cout << actors[actorIndex] << endl;
-    for (auto tid : pas.second)
-    {
-      int mi = titlesToIndex[tid];
-      // cout << "\t in " << titles[mi] << " with: " << endl;
-      for (auto aid : parsedTitles[tid])
-      {
-	if (aid == actorId)
-	  continue;
-	edge e;
-	e.movieIndex = mi;
-	e.toActorIndex = actorsToIndex[aid];
-	graph[actorIndex].push_back(e);
-	// cout << "\t\t " << actors[e.toActorIndex] << endl;
-      }
-    }
-  }
 
   for (auto pas : parsedActors)
   {
@@ -195,121 +213,105 @@ int main() {
     // cout << actors[actorIndex] << endl;
     for (auto tid : pas.second)
     {
-      int mi = titlesToIndex[tid];
-      // cout << "\t in " << titles[mi] << " with: " << endl;
-      for (auto aid : parsedTitles[tid])
-      {
-	if (aid == actorId)
-	  continue;
-	edge e;
-	e.movieIndex = mi;
-	e.toActorIndex = actorsToIndex[aid];
-	graph[actorIndex].push_back(e);
-	// cout << "\t\t " << actors[e.toActorIndex] << endl;
-      }
+      int ti = titlesToIndex[tid];
+      // cout << "\t in " << titles[ti] << " with: " << endl;
+      actorGraph[actorIndex].push_back(ti);
     }
   }
 
-  // for (int i = 0; i < 10; i++)
-  // {
-  //   cout << actors[i] << " friends " << graph[i].size() << endl;
-  // }
-  // unordered_set<string> s;
-  // for (int i = 0; i < graph[0].size(); i++)
-  // {
-  //   string conc = to_string(graph[0][i].toActorIndex) + "-"+ to_string(graph[0][i].movieIndex);
-  //   auto it = s.find(conc);
-  //   if (it != s.end())
-  //     cout << titles[graph[0][i].movieIndex] << " " << actors[graph[0][i].toActorIndex] << endl;
-  //   s.insert(conc);
-  // }
-  // cout << graph[0].size() << " " << s.size() << endl;
+  clock_it("Create Actors Graph", begin, clock());
+  begin = clock();
 
-  clock_it("Create graph", begin, clock());
-
-  string actor1 = "0";
-  string actor2 = "0";
-  while (actor1.length() > 0 || actor2.length() > 0)
+  for (auto pas : parsedTitles)
   {
-    cout << "Enter two actors: "<<endl;
-
-    getline(cin, actor1);
-    getline(cin, actor2);
-
-    int a1 = -1;
-    for (int i = 0; i < actors.size(); i++)
-      if (actors[i] == actor1)
-	a1 = i;
-    int a2 = -1;
-    for (int i = 0; i < actors.size(); i++)
-      if (actors[i] == actor2)
-	a2 = i;
-    if (a1 == -1)
-      cout << "Actor " << actor1 << "not found" << endl;
-    if (a2 == -1)
-      cout << "Actor " << actor2 << "not found" << endl;
-
-    if (a1 != -1 && a2 != -1)
+    int titleId = pas.first;
+    int titleIndex = titlesToIndex[titleId];
+    // cout << actors[actorIndex] << endl;
+    for (auto aid : pas.second)
     {
-	cout << "Actors are " << actor1 << "  " << actor2 <<endl;
-	queue<int> q;
-
-	
+      int ai = actorsToIndex[aid];
+      // cout << "\t in " << titles[mi] << " with: " << endl;
+      titleGraph[titleIndex].push_back(ai);
     }
   }
 
-    
+  clock_it("Create Titles Graph", begin, clock());
+
+  input_loop:
+
+  cout << "Please choose A or B and press <Enter>" << endl;
+  cout << "  A.) Get Actors with Nth degree of separation" << endl;
+  cout << "  B.) Get degrees of separation between two actors" << endl;
+  char option;
+  cin >> option;
+
+  if (cin == 'A')
+  {
+    string actor = "0";
+    cout << "Enter an actor: "<< endl;
+    getline(cin, actor);
+    int a = findActorIndex(actors, actor);
+    if (a != -1)
+    {
+      getActorsWithDepth(actorGraph, titleGraph, visitedFrom, actor);
+    }
+  }
+  else if (cin == 'B')
+  {
+    string actor1 = "0";
+    string actor2 = "0";
+    vector<edge> visitedFrom;
+    cout << endl;
+    while (actor1.length() > 0 || actor2.length() > 0) {
+      cout << "Enter two actors: "<< endl;
+      getline(cin, actor1);
+      getline(cin, actor2);
+
+      // Currently validating the actor names is O(n), it can easily be made O(1)
+      // with an unordered_set, but honestly it's fast enough anyway
+      int a1 = findActorIndex(actors, actor1);
+      int a2 = findActorIndex(actors, actor2);
+
+      // Now the magic happens
+      cout << endl;
+      if (a1 != -1 && a2 != -1)
+	{
+	  begin = clock();
+	  cout << " Searcing..\n" << endl;
+	  int degrees = getDegreesOfSeparation(actorGraph, titleGraph, visitedFrom, a1, a2);
+	  cout << "Degrees of separation " << (degrees + 1) << endl;
+	  cout << "  " << actors[a2] << " was in \n\t";
+	  cout << titles[visitedFrom[a2].movieIndex] << endl;
+	  int current = visitedFrom[a2].toActorIndex;
+	  for (int i = 0; i < 6; i++)
+	    {
+	      edge e = visitedFrom[current];
+	      if (a1 != current)
+		{
+		  cout << "  with " << actors[current];
+		  cout << " who was in \n\t" << titles[e.movieIndex] << endl;
+		}
+	      else
+		{
+		  cout << "  with " << actors[current] << endl;
+		  break;
+		}
+	      current = e.toActorIndex;
+	    }
+	  cout << endl;
+
+	  for (auto v : visitedFrom)
+	    v.toActorIndex = -1;
+	  clock_it("find the degrees of separation", begin, clock());
+	  cout << endl;
+	}
+    }
+  }
+  else
+    cout << "Error with input, please try again" << endl;
+  // Honestly, I'd rather do a goto here so I can avoid yet another level of indentation
+  // cause I also don't want to separate out into functions
+  goto input_loop;
+  
   return 0;
-}
-
-queue<edge> getCostars(vector<bool> visited, int movieIndex, Graph g) 
-{
-  queue<edge> costars;
-  for (auto n : g[actorIndex])
-  {
-    if (!visited[n.toActorIndex])
-    {
-      costars.push(n);
-      visited[n.toActorIndex] = true;
-    }
-  }
-  return costars;
-}
-
-vector<edge> bfs(const Graph& graph, int actorIndex, int targetIndex)
-{
-  queue<edge> top;
-  queue<edge> sub;
-  int depth = 0;
-  edge visitedFrom[graph.size()];
-  edge root;
-  root.toActorIndex = actorIndex;
-  top.push(actor)
-  while (!top.empty())
-  {
-    for (auto e in top)
-    {
-      for (auto m in e.movieIndex)
-      {
-	for (auto a in m)
-        {
-	  if (a == targetIndex)
-	  {
-	    return a;
-          }
-	  else
-	  {
-	    if (a.from == -1)
-            {
-	      a.from = (m , e.toActorIndex)
-	      sub.push(a);
-            }
-          }
-        }
-      }
-    }
-    top = sub;
-    depth++;
-  }
-
 }
