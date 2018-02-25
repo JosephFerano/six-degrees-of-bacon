@@ -92,18 +92,19 @@ int getId(const string& s)
 // graph. Once the graph is completed, we throw it away basically.
 
 
-// void loadAndParseDataFromFile(const string& path,
-// 			      vector<string>& indexToName,
-// 			      unordered_map<int, int>& idToIndex,
-// 			      unordered_map<string, int>& nameToIndex)
-pair< vector<string> , unordered_map<int, int> > loadDataFromFile(const string& path)
+void loadAndParseDataFromFile(const string& path,
+			      vector<string>& indexToName,
+			      unordered_map<int, int>& idToIndex,
+			      unordered_map<string, int>& nameToIndex,
+			      bool mapNames)
+// pair< vector<string> , unordered_map<int, int> > loadDataFromFile(const string& path)
 {
   ifstream file;
   string strLine;
   vector<string> tokens;
 
-  vector<string> data;
-  unordered_map<int, int> map;
+  // vector<string> data;
+  // unordered_map<int, int> map;
 
   file.open(path);
   if (!file.is_open()) {
@@ -118,17 +119,17 @@ pair< vector<string> , unordered_map<int, int> > loadDataFromFile(const string& 
     split(strLine.c_str(), ',', tokens); 
     int id = getId(tokens[0]);
 
-    map[id] = i;
-    data.push_back(tokens[1]);
+    // map[id] = i;
+    // data.push_back(tokens[1]);
 
-    // idToIndex[id] = i;
-    // if (nameToIndex != NULL)
-    //   nameToIndex[tokens[1]] = i;
-    // indexToName.push_back(tokens[1]);
+    idToIndex[id] = i;
+    if (mapNames)
+      nameToIndex[tokens[1]] = i;
+    indexToName.push_back(tokens[1]);
 
     i++;
   }
-  return make_pair(data, map);
+  // return make_pair(data, map);
 }
 
 void clock_it(const string& m, clock_t begin, clock_t end)
@@ -260,20 +261,25 @@ int main() {
 
   begin = clock();
 
-  auto p1 = loadDataFromFile("names.csv");
-  actors = p1.first;
-  actorsToIndex = p1.second;
+  // auto p1 = loadDataFromFile("names.csv");
+  // actors = p1.first;
+  // actorsToIndex = p1.second;
 
-  // loadAndParseDataFromFile("names.csv", actors, actorsToIndex, actorNamesToIndex);
+  loadAndParseDataFromFile("names.csv", actors, actorsToIndex, actorNamesToIndex, true);
+
   clock_it("Parse Names", begin, clock());
 
   begin = clock();
 
-  auto p2 = loadDataFromFile("title.basic.csv");
-  titles = p2.first;
-  titlesToIndex = p2.second;
+  // auto p2 = loadDataFromFile("title.basic.csv");
+  // titles = p2.first;
+  // titlesToIndex = p2.second;
 
-  // loadAndParseDataFromFile("title.basic.csv", titles, titlesToIndex, NULL);
+  // Not sure of a better way to handle this, since I don't know how to make this
+  // an optional parameter since NULL nor nullptr don't work
+  unordered_map<string, int> dummy;
+  loadAndParseDataFromFile("title.basic.csv", titles, titlesToIndex, dummy, false);
+
   clock_it("Parse Titles", begin, clock());
 
   ifstream principalsFile;
@@ -295,13 +301,9 @@ int main() {
     split(strLine.c_str(), ',', tokens); 
     int titleId = getId(tokens[0]);
     for (int j = 1; j < tokens.size(); j++)
-    {
       parsedTitles[titleId].insert(getId(tokens[j]));
-    }
     for (auto a : parsedTitles[titleId])
-    {
       parsedActors[a].insert(titleId);
-    }
   }
 
   clock_it("Create maps", begin, clock());
@@ -313,7 +315,6 @@ int main() {
   titleGraph.resize(titlesToIndex.size());
 
   begin = clock();
-
 
   for (auto pas : parsedActors)
   {
@@ -363,12 +364,12 @@ int main() {
     cout << "Enter an actor: "<< endl;
     getline(cin, actorInput);
 
-    int a = findActorIndex(actors, actorInput);
+    // int a = findActorIndex(actors, actorInput);
 
-    // int a = -1;
-    // auto it = actorNamesToIndex.find(actorInput);
-    // if (it != actorNamesToIndex.end())
-    //   a = it->second;
+    int a = -1;
+    auto it = actorNamesToIndex.find(actorInput);
+    if (it != actorNamesToIndex.end())
+      a = it->second;
 
     if (a != -1)
     {
@@ -400,17 +401,17 @@ int main() {
     // Currently validating the actor names is O(n), it can easily be made O(1)
     // with an unordered_set, but honestly it's fast enough anyway
 
-    int a1 = findActorIndex(actors, actor1);
-    int a2 = findActorIndex(actors, actor2);
+    // int a1 = findActorIndex(actors, actor1);
+    // int a2 = findActorIndex(actors, actor2);
 
-    // int a1 = -1;
-    // auto it1 = actorNamesToIndex.find(actor1);
-    // if (it1 != actorNamesToIndex.end())
-    //   a1 = it1->second;
-    // int a2 = -1;
-    // auto it2 = actorNamesToIndex.find(actor2);
-    // if (it2 != actorNamesToIndex.end())
-    //   a2 = it2->second;
+    int a1 = -1;
+    auto it1 = actorNamesToIndex.find(actor1);
+    if (it1 != actorNamesToIndex.end())
+      a1 = it1->second;
+    int a2 = -1;
+    auto it2 = actorNamesToIndex.find(actor2);
+    if (it2 != actorNamesToIndex.end())
+      a2 = it2->second;
 
     // Now the magic happens
     cout << endl;
