@@ -91,17 +91,20 @@ int getId(const string& s)
 // is a temporary map who use is just to facilitate constructing the
 // graph. Once the graph is completed, we throw it away basically.
 
-// pair< vector<string> , unordered_map<int, int> > loadDataFromFile(const string& path)
-void loadAndParseDataFromFile(const string& path,
-			      vector<string>& indexToName,
-			      unordered_map<int, int>& idToIndex,
-			      unordered_map<string, int>& nameToIndex)
+
+// void loadAndParseDataFromFile(const string& path,
+// 			      vector<string>& indexToName,
+// 			      unordered_map<int, int>& idToIndex,
+// 			      unordered_map<string, int>& nameToIndex)
+pair< vector<string> , unordered_map<int, int> > loadDataFromFile(const string& path)
 {
   ifstream file;
   string strLine;
   vector<string> tokens;
-  // vector<string> data;
-  // unordered_map<int, int> map;
+
+  vector<string> data;
+  unordered_map<int, int> map;
+
   file.open(path);
   if (!file.is_open()) {
     cout << "Error reading file at " << path << endl;
@@ -114,16 +117,18 @@ void loadAndParseDataFromFile(const string& path,
     
     split(strLine.c_str(), ',', tokens); 
     int id = getId(tokens[0]);
-    // map[id] = i;
-    // // cout << tokens[1] << " " << map[id] << endl;
-    // data.push_back(tokens[1]);
-    idToIndex[id] = i;
-    nameToIndex[tokens[1]] = i;
-    indexToName.push_back(tokens[1]);
+
+    map[id] = i;
+    data.push_back(tokens[1]);
+
+    // idToIndex[id] = i;
+    // if (nameToIndex != NULL)
+    //   nameToIndex[tokens[1]] = i;
+    // indexToName.push_back(tokens[1]);
 
     i++;
-    // return make_pair(data, map);
   }
+  return make_pair(data, map);
 }
 
 void clock_it(const string& m, clock_t begin, clock_t end)
@@ -250,29 +255,25 @@ int main() {
   vector<string> titles;
   vector<string> actors;
   unordered_map<string, int> actorNamesToIndex;
-  unordered_map<string, int> titleNamesToIndex;
   unordered_map<int, int> actorsToIndex;
   unordered_map<int, int> titlesToIndex;
 
   begin = clock();
 
-  // auto p1 = loadDataFromFile("names.csv");
-  // actors = p1.first;
-  // actorsToIndex = p1.second;
+  auto p1 = loadDataFromFile("names.csv");
+  actors = p1.first;
+  actorsToIndex = p1.second;
 
-  loadAndParseDataFromFile("names.csv", actors, actorsToIndex, actorNamesToIndex);
+  // loadAndParseDataFromFile("names.csv", actors, actorsToIndex, actorNamesToIndex);
   clock_it("Parse Names", begin, clock());
-  cout << actorNamesToIndex.size() << endl;
-  // for (auto n : actorNamesToIndex)
-  //   cout << n.first << " " << n.second << endl;
 
   begin = clock();
 
-//   auto p2 = loadDataFromFile("title.basic.csv");
-//   titles = p2.first;
-//   titlesToIndex = p2.second;
+  auto p2 = loadDataFromFile("title.basic.csv");
+  titles = p2.first;
+  titlesToIndex = p2.second;
 
-  loadAndParseDataFromFile("title.basic.csv", titles, titlesToIndex, titleNamesToIndex);
+  // loadAndParseDataFromFile("title.basic.csv", titles, titlesToIndex, NULL);
   clock_it("Parse Titles", begin, clock());
 
   ifstream principalsFile;
@@ -342,8 +343,8 @@ int main() {
   clock_it("Create Titles Graph", begin, clock());
 
   // We don't need these anymore
-  parsedActors.clear();
-  parsedTitles.clear();
+  // parsedActors.clear();
+  // parsedTitles.clear();
 
   input_loop:
 
@@ -361,17 +362,21 @@ int main() {
     int depth;
     cout << "Enter an actor: "<< endl;
     getline(cin, actorInput);
-    // int a = findActorIndex(actors, actor);
-    int a = -1;
-    auto it = actorNamesToIndex.find(actorInput);
-    if (it != actorNamesToIndex.end())
-      a = it->second;
+
+    int a = findActorIndex(actors, actorInput);
+
+    // int a = -1;
+    // auto it = actorNamesToIndex.find(actorInput);
+    // if (it != actorNamesToIndex.end())
+    //   a = it->second;
+
     if (a != -1)
     {
       cout << "Now enter a depth: (max 6)"<< endl;
       getline(cin, depthInput);
       depth = stoi(depthInput);
       cout << endl;
+      if (depth > 6) cout << "Greater than 6, ignoring and using max of 6\n" << endl;
       begin = clock();
       cout << " Searcing..\n" << endl;
       auto cs = getActorsWithDepth(actorGraph, titleGraph, a, depth);
@@ -394,17 +399,18 @@ int main() {
 
     // Currently validating the actor names is O(n), it can easily be made O(1)
     // with an unordered_set, but honestly it's fast enough anyway
-    // int a1 = findActorIndex(actors, actor1);
-    // int a2 = findActorIndex(actors, actor2);
 
-    int a1 = -1;
-    auto it1 = actorNamesToIndex.find(actor1);
-    if (it1 != actorNamesToIndex.end())
-      a1 = it1->second;
-    int a2 = -1;
-    auto it2 = actorNamesToIndex.find(actor2);
-    if (it2 != actorNamesToIndex.end())
-      a2 = it2->second;
+    int a1 = findActorIndex(actors, actor1);
+    int a2 = findActorIndex(actors, actor2);
+
+    // int a1 = -1;
+    // auto it1 = actorNamesToIndex.find(actor1);
+    // if (it1 != actorNamesToIndex.end())
+    //   a1 = it1->second;
+    // int a2 = -1;
+    // auto it2 = actorNamesToIndex.find(actor2);
+    // if (it2 != actorNamesToIndex.end())
+    //   a2 = it2->second;
 
     // Now the magic happens
     cout << endl;
