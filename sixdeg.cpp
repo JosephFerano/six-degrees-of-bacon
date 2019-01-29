@@ -386,8 +386,7 @@ int main() {
     getline(cin, actor2);
 
     // Currently validating the actor names is O(n), it can easily be made O(1)
-    // with an unordered_set, but honestly it's fast enough anyway
-
+    // with an unordered_set, but honestly it's fast enough anyway. I tried at least...
     int a1 = findActorIndex(actors, actor1);
     int a2 = findActorIndex(actors, actor2);
 
