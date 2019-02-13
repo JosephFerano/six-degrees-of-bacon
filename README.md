@@ -11,4 +11,4 @@ Please choose A or B and press <Enter>
 ```
 `sixdeg.cpp` has additional comments.
 
-See [https://docs.google.com/document/d/11Y_RFM89YaLTu7rmmfeGer_HqXWamaiQw9EdRu6zx48/edit?usp=sharing](Link) for the assignment's instructions.
+See [Link](https://docs.google.com/document/d/11Y_RFM89YaLTu7rmmfeGer_HqXWamaiQw9EdRu6zx48/edit?usp=sharing) for the assignment's instructions.
